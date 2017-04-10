@@ -1,0 +1,14 @@
+{
+  "name": "elite-map",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Destius",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.3.0"
+  }
+}
