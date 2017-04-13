@@ -9,7 +9,12 @@
   "author": "Destius",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.3.0",
-    "mongoose": "^4.9.4"
+    "async": "2.3.0",
+    "bluebird": "3.5.0",
+    "mongoose": "4.9.4"
+  },
+  "devDependencies": {
+    "eslint": "3.19.0",
+    "eslint-config-google": "0.7.1"
   }
 }
