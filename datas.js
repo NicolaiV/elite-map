@@ -3,7 +3,8 @@ var fs = require('fs')
 var eachOfLimit = require('async').eachOfLimit;
 var mongoose = require('mongoose');
 var db = null;
-
+	 mongoose.Promise = global.Promise;
+	 
 var System = mongoose.model('System', 
 {  
 	id: Number,
@@ -87,10 +88,14 @@ function updateDB() {
 			var systems = JSON.parse(fs.readFileSync(pathToSystemsJSON).toString());
 			console.log(systems.length)
 			eachOfLimit(systems, 1, (value, key, callback) => {
-					new System(value).save((err, data, affected) => callback());
-				}, () => console.log('END'));
+					let system = new System(value);
+					system.save((err, data, affected) => callback());
+					}, () =>{console.log('END'); 
+					System.count({}, function(err, c) {
+					   console.log('Count is ' + c);
+					});
+					resolve()});
 			delete systems;
-			resolve()
 		})
 	});
 }

@@ -11,8 +11,8 @@ function distance(initial, target){
 datasGetter.initDB()
 	.then(datasGetter.clearDB)
 	.then(datasGetter.updateDB)
-	.catch(err=>console.log(err))
 	.then(datasGetter.closeDB)
+	.catch(err=>console.log(err))
 	
 	
 	/*for(let index in systems){
