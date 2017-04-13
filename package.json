@@ -9,6 +9,7 @@
   "author": "Destius",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.3.0"
+    "async": "^2.3.0",
+    "mongoose": "^4.9.4"
   }
 }

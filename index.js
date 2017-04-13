@@ -1,23 +1,37 @@
 var datasGetter = require('./datas');
-var fs = require('fs')
+var fs = require('fs');
+var eachOfLimit = require('async').eachOfLimit;
 
-/*var api = {
-	"modules": "https://eddb.io/archive/v5/modules.json",
-	"systems": "https://eddb.io/archive/v5/systems_populated.json",
-	"stations": "https://eddb.io/archive/v5/stations.json",
-	"factions": "https://eddb.io/archive/v5/factions.json",
-	"commodities": "https://eddb.io/archive/v5/commodities.json"
-}*/
-
-function updateDB() {
-	return new Promise(function(resolve, reject) {
-		var pathToSystemsJSON = datasGetter.getJsonPath('systems');
-		datasGetter.getFile("https://eddb.io/archive/v5/systems_populated.json", pathToSystemsJSON, (code, data)=>{
-			var systems = JSON.parse(fs.readFileSync(pathToSystemsJSON).toString());
-			
-			resolve()
-		})
-	})
+function distance(initial, target){
+	var {x: initialX, y: initialY, z: initialZ} = initial;
+	var {x: targetX, y: targetY, z: targetZ} = target;
+	return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }
 
-updateDB();
+datasGetter.initDB()
+	.then(datasGetter.clearDB)
+	.then(datasGetter.updateDB)
+	.catch(err=>console.log(err))
+	.then(datasGetter.closeDB)
+	
+	
+	/*for(let index in systems){
+	if(systems.hasOwnProperty(index)){
+		let system = systems[index];
+		console.log(index)
+	/*
+	if(systems.hasOwnProperty(index)){
+		let system = systems[index];
+		system.distances = [];
+		for(let targetIndex in systems){
+			if(systems.hasOwnProperty(targetIndex)){
+				let target = systems[index];
+				if(target.distances && target.distances[index]){
+					system.distances[targetIndex] = target.distances[index];
+				}
+				system.distances[targetIndex] = distance(system, target);
+			}
+		}
+	}*//*
+	}
+}*/
