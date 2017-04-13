@@ -7,8 +7,8 @@ function distance(initial, target){
   const {x: targetX, y: targetY, z: targetZ} = target;
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }
-datasGetter.getDb()
-  .then(db => db.dropDatabase())
+datasGetter.initDb()
+  .then(() => datasGetter.db.dropDatabase())
   .then(datasGetter.updateDB)
   .then(datasGetter.closeDB)
   .catch(err=>console.log(err))

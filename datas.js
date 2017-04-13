@@ -117,9 +117,9 @@ function closeDB(){
   })
 }
 
-function getDb() { 
+function initDb() { 
   return connect
-    .then(() => connect.connection.db); 
+    .then(() => {db = connect.connection.db});
 }
 
 module.exports = {
@@ -129,5 +129,5 @@ module.exports = {
   updateDB: updateDB,
   closeDB: closeDB,
   db: db,
-  getDb: getDb
+  initDb: initDb
 }
