@@ -9,7 +9,7 @@ datasGetter.initDb()
     .then(() => datasGetter.db.dropDatabase())
     .then(datasGetter.updateDB)
     .then(datasGetter.closeDB)
-    .catch(err=>console.log(err));
+    .catch(err=>{throw err});
   
   
   /*for(let index in systems){

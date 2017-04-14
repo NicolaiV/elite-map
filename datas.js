@@ -1,5 +1,6 @@
 const http = require('https');
 const fs = require('fs');
+const fsp = require('fs-es6-promise');
 const eachOfLimit = require('async').eachOfLimit;
 const bluebird = require('bluebird');
 const mongoose = require('mongoose');
@@ -29,10 +30,9 @@ function downloadFile(url, path, callback){
         res.on('end', function () {
             console.log(`Запись ${url} в ${path}`);
             stream.end();
-            fs.readFile(path, (code, data)=>{
-                if(code){
-                    callback(code);
-                } else {
+            
+            fsp.readFile(path)
+                .then(data=>{
                     try{
                         JSON.parse(data.toString());
                     }
@@ -40,8 +40,7 @@ function downloadFile(url, path, callback){
                         downloadFile(url, path, callback);
                     }
                     callback();
-                }
-            });
+                });
         });
         res.on('error', (e) => {
             callback(e);
@@ -50,8 +49,8 @@ function downloadFile(url, path, callback){
 }
 
 function getFile(url, path, callback){
-    try{
-        fs.stat(path, (err, stat) => {
+    fsp.stat(path)
+        .then(stat => {
             const date = new Date();
             if( stat
                 && (stat.ctime.getFullYear() === date.getFullYear())
@@ -61,10 +60,14 @@ function getFile(url, path, callback){
             } else {
                 downloadFile(url, path, callback);
             }    
+        })
+        .catch(err=>{
+            if (err.code === 'ENOENT'){
+                downloadFile(url, path, callback);
+            } else {
+                callback(err);
+            }
         });
-    } catch (err){
-        callback(err);
-    }
 }
 
 function getJsonPath(item){
@@ -89,14 +92,13 @@ function updateDB() {
         const pathToSystemsJSON = getJsonPath('systems');
         getFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON, (err)=>{
             if(err){
-                console.log('Ошибка чтения файла');
+                console.log('Ошибка чтения файла: ' + JSON.stringify(err));
                 reject(err);
+                return;
             }
             console.log('Файл прочитан');
-            fs.readFile(pathToSystemsJSON, (code, data)=>{
-                if(code){
-                    reject(code);
-                } else {
+            fsp.readFile(pathToSystemsJSON)
+                .then(data=>{
                     let systems = JSON.parse(data.toString());
                     console.log(systems.length);
                     eachOfLimit(systems, 1, (value, key, callback) => {
@@ -105,11 +107,10 @@ function updateDB() {
                     }, () =>{console.log('END'); 
                         System.count({}, function(err, c) {
                             console.log('Count is ' + c);
+                            resolve();
                         });
-                        resolve();
                     });
-                }
-            });
+                });
         });
     });
 }
