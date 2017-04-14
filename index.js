@@ -1,17 +1,15 @@
 const datasGetter = require('./datas');
-const fs = require('fs');
-const eachOfLimit = require('async').eachOfLimit;
 
-function distance(initial, target){
+/*function distance(initial, target){
   const {x: initialX, y: initialY, z: initialZ} = initial;
   const {x: targetX, y: targetY, z: targetZ} = target;
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
-}
+}*/
 datasGetter.initDb()
-  .then(() => datasGetter.db.dropDatabase())
-  .then(datasGetter.updateDB)
-  .then(datasGetter.closeDB)
-  .catch(err=>console.log(err))
+    .then(() => datasGetter.db.dropDatabase())
+    .then(datasGetter.updateDB)
+    .then(datasGetter.closeDB)
+    .catch(err=>console.log(err));
   
   
   /*for(let index in systems){
