@@ -10,64 +10,60 @@ mongoose.Promise = bluebird;
 const connect = mongoose.connect('mongodb://localhost:27017/');
 let db = mongoose.connection.db;
 
-const System = mongoose.model('System', 
-    {    
-        id: Number,
-        edsm_id: Number,
-        name: String,
-        x: Number,
-        y: Number,
-        z: Number 
-    });
+const pathToSystemsJSON = getJsonPath('systems');
 
-function downloadFile(url, path, callback){    
-    let stream = new fs.createWriteStream(path);
-    http.get(url, function (res) {
-        console.log(`Загрузка ${url}`);
-        res.on('data', function (chunk) {
-            stream.write(chunk);
-        });
-        res.on('end', function () {
-            console.log(`Запись ${url} в ${path}`);
-            stream.end();
-            
-            fsp.readFile(path)
-                .then(data=>{
-                    try{
-                        JSON.parse(data.toString());
-                    }
-                    catch(e) {
-                        downloadFile(url, path, callback);
-                    }
-                    callback();
-                });
-        });
-        res.on('error', (e) => {
-            callback(e);
+/*const api = {
+    "modules": "https://eddb.io/archive/v5/modules.json",
+    "systems": "https://eddb.io/archive/v5/systems_populated.json",
+    "stations": "https://eddb.io/archive/v5/stations.json",
+    "factions": "https://eddb.io/archive/v5/factions.json",
+    "commodities": "https://eddb.io/archive/v5/commodities.json"
+}*/
+
+
+var systemSchema = new mongoose.Schema({
+    id: {
+        type: Number,
+        unique: true
+    },
+    edsm_id: Number,
+    name: String,
+    x: Number,
+    y: Number,
+    z: Number 
+});
+
+const System = mongoose.model('System', systemSchema);
+
+function downloadFile(url, path){    
+    return new Promise(function(resolve, reject) {
+        let stream = new fs.createWriteStream(path);
+        http.get(url, function (res) {
+            console.log(`Загрузка ${url}`);
+            res.on('data', function (chunk) {
+                stream.write(chunk);
+            });
+            res.on('end', function () {
+                console.log(`Запись ${url} в ${path}`);
+                stream.end();
+                
+                fsp.readFile(path)
+                    .then(data=>{
+                        try{
+                            JSON.parse(data.toString());
+                        }
+                        catch(e) {
+                            downloadFile(url, path)
+                                .then(resolve);
+                        }
+                        resolve();
+                    });
+            });
+            res.on('error', (e) => {
+                reject(e);
+            });
         });
     });
-}
-
-function getFile(url, path, callback){
-    fsp.stat(path)
-        .then(stat => {
-            const date = new Date();
-            if( stat
-                && (stat.ctime.getFullYear() === date.getFullYear())
-                && (stat.ctime.getMonth() === date.getMonth())
-                && (stat.ctime.getDate() === date.getDate())){
-                callback();
-            } else {
-                downloadFile(url, path, callback);
-            }    
-        })
-        .catch(err=>{
-            if (err.code === 'ENOENT'){
-                downloadFile(url, path, callback);
-            } else {
-                callback(err);
-            }
-        });
 }
 
 function getJsonPath(item){
@@ -76,50 +72,22 @@ function getJsonPath(item){
 
 function getAPI(api, done){
     try {
-        eachOfLimit(api, 1, (value, key, callback) => getFile(value, getJsonPath(key), (code)=>{
-            if(code){
-                done(code);
-            } 
-            callback();
-        }), () => done(0, Object.keys(api).map( item => getJsonPath(item))));
+        eachOfLimit(api, 1, (value, key, callback) => downloadFile(value, getJsonPath(key))
+            .then((code)=>{
+                if(code){
+                    done(code);
+                } 
+                callback();
+            }), () => done(0, Object.keys(api).map( item => getJsonPath(item))));
     } catch (err){
         done(err);
     }
 }
 
-function updateDB() {
-    return new Promise(function(resolve, reject) {
-        const pathToSystemsJSON = getJsonPath('systems');
-        getFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON, (err)=>{
-            if(err){
-                console.log('Ошибка чтения файла: ' + JSON.stringify(err));
-                reject(err);
-                return;
-            }
-            console.log('Файл прочитан');
-            fsp.readFile(pathToSystemsJSON)
-                .then(data=>{
-                    let systems = JSON.parse(data.toString());
-                    console.log(systems.length);
-                    eachOfLimit(systems, 1, (value, key, callback) => {
-                        let system = new System(value);
-                        system.save(() => callback());
-                    }, () =>{console.log('END'); 
-                        System.count({}, function(err, c) {
-                            console.log('Count is ' + c);
-                            resolve();
-                        });
-                    });
-                });
-        });
-    });
-}
 
 function closeDB(){
-    return new Promise(function(resolve) {
-        console.log('closeDB');
-        mongoose.connection.close(resolve);
-    });
+    console.log('closeDB');
+    return mongoose.connection.close();
 }
 
 function initDb() { 
@@ -127,12 +95,78 @@ function initDb() {
         .then(() => db = connect.connection.db);
 }
 
+function count(params = {}){
+    console.log('params: ' + JSON.stringify(params));
+    return new Promise(function(resolve) {
+        System.count(params, function(err, count) {
+            if(err) {
+                console.log('err');
+                resolve(0);
+            }
+            console.log('Count is ' + count);
+            resolve(count);
+        });
+    });
+}
+
+function updateDB() {
+    return new Promise(function(resolve, reject) {
+        downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
+            .then((err)=>{
+                if(err){
+                    console.log('Ошибка чтения файла: ' + JSON.stringify(err));
+                    reject(err);
+                    return;
+                }
+                console.log('Файл прочитан');
+                fsp.readFile(pathToSystemsJSON)
+                    .then(data=>{
+                        let systems = JSON.parse(data.toString());
+                        console.log(systems.length);
+                        eachOfLimit(systems, 1, (value, key, callback) => {
+                            let system = new System(value);
+                            system.save(() => callback());
+                        }, () =>{console.log('END'); 
+                            resolve();
+                        });
+                    });
+            });
+    });
+}
+
+function actualDB(force){
+    return new Promise(function(resolve, reject) {
+        fsp.stat(pathToSystemsJSON)
+            .then(stat => {
+                const date = new Date();
+                if( stat
+                    && (stat.ctime.getFullYear() === date.getFullYear())
+                    && (stat.ctime.getMonth() === date.getMonth())
+                    && (stat.ctime.getDate() === date.getDate()) && !force){
+                    resolve();
+                } else {
+                    updateDB()
+                        .then(resolve);
+                }    
+            })
+            .catch(err=>{
+                if (err.code === 'ENOENT'){
+                    updateDB()
+                        .then(resolve);
+                } else {
+                    reject(err);
+                }
+            });
+    });
+}
+
 module.exports = {
     getAPI: getAPI,
     getJsonPath: getJsonPath,
-    getFile: getFile,
+    actualDB: actualDB,
     updateDB: updateDB,
     closeDB: closeDB,
+    count: count,
     db: db,
     initDb: initDb
 };
