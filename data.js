@@ -1,7 +1,6 @@
-const http = require('https');
+const https = require('https');
 const fs = require('fs');
 const fsp = require('fs-es6-promise');
-const eachOfLimit = require('async').eachOfLimit;
 const bluebird = require('bluebird');
 const mongoose = require('mongoose');
 
@@ -57,10 +56,10 @@ const systemSchema = new mongoose.Schema({
 
 const System = mongoose.model('System', systemSchema);
 
-function downloadFile(url, path){    
+function downloadFile(url, path){
     return new Promise(function(resolve, reject) {
         let stream = new fs.createWriteStream(path);
-        http.get(url, function (res) {
+        https.get(url, function (res) {
             console.log(`Downloas ${url}`);
             res.on('data', function (chunk) {
                 stream.write(chunk);
@@ -70,19 +69,19 @@ function downloadFile(url, path){
                 stream.end();
                 
                 fsp.readFile(path)
-                    .then(data=>{
+                    .then( data => {
                         try{
                             JSON.parse(data.toString());
                         }
-                        catch(e) {
+                        catch() {
                             downloadFile(url, path)
                                 .then(resolve);
                         }
                         resolve();
                     });
             });
-            res.on('error', (e) => {
-                reject(e);
+            res.on('error', err => {
+                reject(err);
             });
         });
     });
@@ -92,19 +91,19 @@ function getJsonPath(item){
     return `data/${item}.json`;
 }
 
-function getAPI(api, done){
+/*function getAPI(api, done){
     try {
         eachOfLimit(api, 1, (value, key, callback) => downloadFile(value, getJsonPath(key))
-            .then((code)=>{
-                if(code){
-                    done(code);
+            .then(err => {
+                if(err){
+                    done(err);
                 } 
                 callback();
             }), () => done(0, Object.keys(api).map( item => getJsonPath(item))));
     } catch (err){
         done(err);
     }
-}
+}*/
 
 
 function closeDB(){
@@ -132,32 +131,17 @@ function count(params = {}){
 }
 
 function updateDB() {
-    return new Promise(function(resolve, reject) {
-        downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
-            .then((err)=>{
-                if(err){
-                    console.log('Ошибка чтения файла: ' + JSON.stringify(err));
-                    reject(err);
-                    return;
-                }
-                fsp.readFile(pathToSystemsJSON)
-                    .then(data=>{
-                        let systems = JSON.parse(data.toString());
-                        console.log(systems.length);
-                        eachOfLimit(systems, 30, (value, key, callback) => {
-                            let system = new System(value);
-                            system.save(() => callback());
-                        }, () =>{console.log('END'); 
-                            resolve();
-                        });
-                    });
-            });
-    });
+    downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
+        .then( () => fsp.readFile(pathToSystemsJSON))
+        .then( data => new Promise(function(resolve) {
+            let systems = JSON.parse(data.toString());
+            bluebird.map(systems, system => system.save()).then(()=> resolve());
+        });
 }
 
 function actualDB(force){
     return fsp.stat(pathToSystemsJSON)
-        .then(stat => {
+        .then( stat => {
             const date = new Date();
             if( stat
                 && (stat.ctime.getFullYear() === date.getFullYear())
@@ -167,7 +151,7 @@ function actualDB(force){
             }
             return updateDB();
         })
-        .catch(err=>{
+        .catch( err => {
             if (err.code === 'ENOENT') { 
                 return updateDB();
             }
@@ -176,7 +160,7 @@ function actualDB(force){
 }
 
 module.exports = {
-    getAPI: getAPI,
+  //  getAPI: getAPI,
     getJsonPath: getJsonPath,
     actualDB: actualDB,
     updateDB: updateDB,
