@@ -18,10 +18,7 @@ const dataGetter = require('./data');
 dataGetter.initDb()
     //.then(() => dataGetter.db.dropDatabase())
     .then(() => dataGetter.count())
-    .then(count => new Promise(function(resolve) {
-        dataGetter.actualDB(true)
-            .then(resolve);
-    }))
+    .then(count => dataGetter.actualDB(count === 0))
     //.then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
     .then(dataGetter.closeDB)
     .catch(err=>{throw err;});
