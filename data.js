@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 
 mongoose.Promise = bluebird;
      
-const connect = mongoose.connect('mongodb://localhost:27017/');
+const connect = mongoose.connect('mongodb://localhost:27017/elite');
 let db = mongoose.connection.db;
 
 const pathToSystemsJSON = getJsonPath('systems');
@@ -21,7 +21,7 @@ const pathToSystemsJSON = getJsonPath('systems');
 }*/
 
 
-var systemSchema = new mongoose.Schema({
+const systemSchema = new mongoose.Schema({
     id: {
         type: Number,
         unique: true
@@ -118,12 +118,11 @@ function updateDB() {
                     reject(err);
                     return;
                 }
-                console.log('Файл прочитан');
                 fsp.readFile(pathToSystemsJSON)
                     .then(data=>{
                         let systems = JSON.parse(data.toString());
                         console.log(systems.length);
-                        eachOfLimit(systems, 10, (value, key, callback) => {
+                        eachOfLimit(systems, 30, (value, key, callback) => {
                             let system = new System(value);
                             system.save(() => callback());
                         }, () =>{console.log('END'); 
@@ -135,29 +134,23 @@ function updateDB() {
 }
 
 function actualDB(force){
-    return new Promise(function(resolve, reject) {
-        fsp.stat(pathToSystemsJSON)
-            .then(stat => {
-                const date = new Date();
-                if( stat
-                    && (stat.ctime.getFullYear() === date.getFullYear())
-                    && (stat.ctime.getMonth() === date.getMonth())
-                    && (stat.ctime.getDate() === date.getDate()) && !force){
-                    resolve();
-                } else {
-                    updateDB()
-                        .then(resolve);
-                }    
-            })
-            .catch(err=>{
-                if (err.code === 'ENOENT'){
-                    updateDB()
-                        .then(resolve);
-                } else {
-                    reject(err);
-                }
-            });
-    });
+    return fsp.stat(pathToSystemsJSON)
+        .then(stat => {
+            const date = new Date();
+            if( stat
+                && (stat.ctime.getFullYear() === date.getFullYear())
+                && (stat.ctime.getMonth() === date.getMonth())
+                && (stat.ctime.getDate() === date.getDate()) && !force){
+                return;
+            }
+            return updateDB();
+        })
+        .catch(err=>{
+            if (err.code === 'ENOENT') { 
+                return updateDB();
+            }
+            throw err;
+        });
 }
 
 module.exports = {
