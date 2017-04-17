@@ -123,7 +123,7 @@ function updateDB() {
                     .then(data=>{
                         let systems = JSON.parse(data.toString());
                         console.log(systems.length);
-                        eachOfLimit(systems, 1, (value, key, callback) => {
+                        eachOfLimit(systems, 10, (value, key, callback) => {
                             let system = new System(value);
                             system.save(() => callback());
                         }, () =>{console.log('END'); 

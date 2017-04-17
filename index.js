@@ -1,4 +1,4 @@
-const datasGetter = require('./datas');
+const dataGetter = require('./data');
 /*
 1. Подключается к базе данных
 2. Запускается веб сервер с имеющейся базой данных, если она не пуста
@@ -15,15 +15,15 @@ const datasGetter = require('./datas');
   const {x: targetX, y: targetY, z: targetZ} = target;
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }*/
-datasGetter.initDb()
-    //.then(() => datasGetter.db.dropDatabase())
-    .then(() => datasGetter.count())
+dataGetter.initDb()
+    //.then(() => dataGetter.db.dropDatabase())
+    .then(() => dataGetter.count())
     .then(count => new Promise(function(resolve) {
-        datasGetter.actualDB(count === 0)
+        dataGetter.actualDB(true)
             .then(resolve);
     }))
     //.then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
-    .then(datasGetter.closeDB)
+    .then(dataGetter.closeDB)
     .catch(err=>{throw err;});
   
   
