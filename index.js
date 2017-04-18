@@ -1,4 +1,4 @@
-const dataGetter = require('./data');
+const mongoInterface = require('./mongo_interface');
 /*
 1. Подключается к базе данных
 2. Запускается веб сервер с имеющейся базой данных, если она не пуста
@@ -14,12 +14,12 @@ function distance(initial, target){
   const {x: targetX, y: targetY, z: targetZ} = target;
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }*/
-dataGetter.initDb()
-   // .then(() => dataGetter.db.dropDatabase())
-    .then(() => dataGetter.count())
-    .then(count => dataGetter.actualDB(count === 0))
+mongoInterface.initDb()
+   // .then(() => mongoInterface.db.dropDatabase())
+    .then(() => mongoInterface.countSystems({}))
+    .then(count => mongoInterface.actualDB(count === 0))
    // .then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
-    .then(dataGetter.closeDB)
+    .then(mongoInterface.closeDB)
     .catch((err) => { throw err; });
 
   /*
