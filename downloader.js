@@ -1,5 +1,4 @@
-const https = require('https');
-const fs = require('fs');
+const rp = require('request-promise');
 const fsp = require('fs-es6-promise');
 
 function getJsonPath(item) {
@@ -7,33 +6,17 @@ function getJsonPath(item) {
 }
 
 function downloadFile(url, path) {
-  return new Promise((resolve, reject) => {
-    const stream = new fs.createWriteStream(path);
-    https.get(url, (res) => {
-      console.log(`Downloas ${url}`);
-      res.on('data', (chunk) => {
-        stream.write(chunk);
-      });
-      res.on('end', () => {
-        console.log(`Write ${url} to ${path}`);
-        stream.end();
-
-        fsp.readFile(path)
-          .then((data) => {
-            try {
-              JSON.parse(data.toString());
-            } catch (e) {
-              downloadFile(url, path)
-                .then(resolve);
-            }
-            resolve();
-          });
-      });
-      res.on('error', (err) => {
-        reject(err);
-      });
+  console.log(`Downloas ${url}`);
+  return rp(url)
+    .then((data) => {
+      console.log(`Write ${url} to ${path}`);
+      try {
+        JSON.parse(data.toString());
+      } catch (e) {
+        return downloadFile(url, path);
+      }
+      return fsp.writeFile(path, data);
     });
-  });
 }
 
 module.exports = {
