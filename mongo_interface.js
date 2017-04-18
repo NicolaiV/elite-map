@@ -58,25 +58,20 @@ function initDb() {
 }
 
 function countSystems(params = {}) {
-  return new Promise((resolve) => {
-    System.count(params, (err, c) => {
-      if (err) {
-        console.log('err');
-        resolve(0);
-      }
+  return System.count(params)
+    .then((c) => {
       console.log(`Count of systems is ${c}`);
-      resolve(c);
+      return c;
     });
-  });
 }
 
 function updateDB() {
   return downloader.downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
     .then(() => fsp.readFile(pathToSystemsJSON))
-    .then(data => new Promise((resolve) => {
+    .then((data) => {
       const systems = JSON.parse(data.toString());
-      bluebird.map(systems, system => new System(system).save()).then(() => resolve());
-    }));
+      return bluebird.map(systems, system => new System(system).save());
+    });
 }
 
 function actualDB(force) {

@@ -15,7 +15,7 @@ function distance(initial, target){
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }*/
 mongoInterface.initDb()
-   // .then(() => mongoInterface.db.dropDatabase())
+    .then(() => mongoInterface.db.dropDatabase())
     .then(() => mongoInterface.countSystems({}))
     .then(count => mongoInterface.actualDB(count === 0))
    // .then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
