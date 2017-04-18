@@ -73,7 +73,7 @@ function downloadFile(url, path){
                         try{
                             JSON.parse(data.toString());
                         }
-                        catch() {
+                        catch(e) {
                             downloadFile(url, path)
                                 .then(resolve);
                         }
@@ -131,12 +131,18 @@ function count(params = {}){
 }
 
 function updateDB() {
-    downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
+    return downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
         .then( () => fsp.readFile(pathToSystemsJSON))
         .then( data => new Promise(function(resolve) {
             let systems = JSON.parse(data.toString());
-            bluebird.map(systems, system => system.save()).then(()=> resolve());
-        });
+            //bluebird.map(systems, system => new System(system).save()).then(()=> resolve());
+			bluebird.map(systems, function(system) {
+				return System(system).save();
+			}).then(function() {
+				console.log("done");
+				resolve();
+			});
+        }));
 }
 
 function actualDB(force){
