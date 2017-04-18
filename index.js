@@ -8,22 +8,22 @@ const dataGetter = require('./data');
     2. Файл парсится и перебирается итерационно
     3. Для каждой системы в БД высчитываются расстояния до всех систем, до кторых расстояний нет
 5. Всё работает
-*/
-/*function distance(initial, target){
+
+function distance(initial, target){
   const {x: initialX, y: initialY, z: initialZ} = initial;
   const {x: targetX, y: targetY, z: targetZ} = target;
   return Math.sqrt(Math.pow((initialX - targetX), 2) + Math.pow((initialY - targetY), 2 ) + Math.pow((initialZ - targetZ), 2))
 }*/
 dataGetter.initDb()
-    //.then(() => dataGetter.db.dropDatabase())
+   // .then(() => dataGetter.db.dropDatabase())
     .then(() => dataGetter.count())
     .then(count => dataGetter.actualDB(count === 0))
-    //.then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
+   // .then(()=>{}) //Обойти базу данных и дописать списки путей там, где их нет
     .then(dataGetter.closeDB)
-    .catch(err=>{throw err;});
-  
-  
-  /*for(let index in systems){
+    .catch((err) => { throw err; });
+
+  /*
+  for(let index in systems){
   if(systems.hasOwnProperty(index)){
     let system = systems[index];
     console.log(index)
@@ -43,5 +43,3 @@ dataGetter.initDb()
   }*//*
   }
 }*/
-
-//TODO: подключить линтер
