@@ -6,14 +6,14 @@ function getJsonPath(item) {
 }
 
 function downloadFile(url, path) {
-  console.log(`Downloas ${url}`);
+  console.log(`Download ${url}`);
   return rp(url)
     .then((data) => {
       console.log(`Write ${url} to ${path}`);
       try {
         JSON.parse(data.toString());
       } catch (e) {
-        return downloadFile(url, path);
+        throw new Error('Download error');
       }
       return fsp.writeFile(path, data);
     });

@@ -57,14 +57,6 @@ function initDb() {
     .then(() => (db = connect.connection.db));
 }
 
-function countSystems(params = {}) {
-  return System.count(params)
-    .then((c) => {
-      console.log(`Count of systems is ${c}`);
-      return c;
-    });
-}
-
 function updateDB() {
   return downloader.downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
     .then(() => fsp.readFile(pathToSystemsJSON))
@@ -99,7 +91,7 @@ module.exports = {
   actualDB,
   updateDB,
   closeDB,
-  countSystems,
   db,
-  initDb
+  initDb,
+  System
 };

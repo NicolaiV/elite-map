@@ -12,6 +12,7 @@
     "bluebird": "3.5.0",
     "fs-es6-promise": "0.0.3",
     "mongoose": "4.9.4",
+    "node-schedule": "1.2.1",
     "request-promise": "4.2.0"
   },
   "devDependencies": {
