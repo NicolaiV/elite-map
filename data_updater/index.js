@@ -32,11 +32,10 @@ function reActualData() {
    // .then(mongoInterface.closeDB)
     .then(() => { console.log('END'); updaeterErrorDeep = 0; })
     .catch((err) => {
-		
-      console.log(`err` + err);
+      console.log(`err ${err}`);
       if (updaeterErrorDeep < 5) {
         updaeterErrorDeep++;
-        setTimeout(reActualData, Math.pow(updaeterErrorDeep, 3)  * 1000);
+        setTimeout(reActualData, (updaeterErrorDeep ** 3) * 1000);
       } else {
         throw err;
       }
