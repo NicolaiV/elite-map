@@ -16,7 +16,7 @@ let updaeterErrorDeep = 0;
 function reActualData() {
   console.log('reActualData');
   return mongoInterface.initDb()
-    .then(() => mongoInterface.db.dropDatabase())
+   // .then(() => mongoInterface.db.dropDatabase())
     .then(() => mongoInterface.System.count({}))
     .then((count) => {
       console.log(`Count of systems is ${count}`);

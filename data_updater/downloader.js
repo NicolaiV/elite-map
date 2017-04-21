@@ -15,7 +15,8 @@ function downloadFile(url, path) {
       } catch (e) {
         throw new Error('Download error');
       }
-      return fsp.writeFile(path, data);
+      return fsp.mkdir(`data`)
+               .then(() => fsp.writeFile(path, data));
     });
 }
 
