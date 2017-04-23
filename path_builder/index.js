@@ -1,0 +1,95 @@
+const mongoose = require('mongoose');
+const bluebird = require('bluebird');
+const System = require('../DB_Models/System');
+const Distance = require('../DB_Models/Distance');
+Promise = bluebird;
+mongoose.Promise = bluebird;
+
+let startId = 1;
+let endId = 25;
+let end = null;
+
+function depsById(id){
+  return Distance.find({ $or: [{docAId: id}, {docBId: id}]}, (err, docs) => docs )
+}
+
+function normaliseItem(item){
+  if(item.docAId === startId){
+    return {
+      startId: item.docAId,
+      endId: item.docBId,
+      dist: item.dist,
+      statX: item.docAx,
+      statY: item.docAy,
+      statZ: item.docAz,  
+      endX: item.docBx,
+      endY: item.docBy,
+      endZ: item.docBz
+    }
+  } else {
+    return {
+      startId: item.docBId,
+      endId: item.docAId,
+      dist: item.dist,
+      statX: item.docBx,
+      statY: item.docBy,
+      statZ: item.docBz,
+      endX: item.docAx,
+      endY: item.docAy,
+      endZ: item.docAz 
+    }
+  }
+}
+
+function distance(x1, y1, z1, x2, y2, z2){
+  let res =  Math.sqrt(((x1 - x2) ** 2)
+            + ((y1 - y2) ** 2)
+            + ((z1 - z2) ** 2));
+    //  console.log('res: ' +  res)
+  return res;
+}
+
+let path = [];
+
+function doStep({ x: endX, y: endY, z: endZ }) {
+  return depsById(startId)
+      .then((deps) => {
+        deps = deps.map((item) => normaliseItem(item));
+        let dist = distance(deps[0].statX, deps[0].statY, deps[0].statZ, endX, endY, endZ) 
+        let delta = [];
+        for (let i in deps) {
+          if (deps.hasOwnProperty(i)) {
+            let targDist = distance(deps[i].endX, deps[i].endY, deps[i].endZ, endX, endY, endZ);
+            delta[i] = targDist;
+          }
+        }
+        let minimum = delta.reduce((minIndex, item, index, array) => { return array[minIndex] > item ? index : minIndex }, 0);
+        console.log('dist: ' + dist);
+        console.log('min:  ' + delta[minimum])
+        //console.log('minimum: ' + JSON.stringify(deps[minimum]))
+        //console.log('endX, endY, endZ: ', endX, endY, endZ)
+        startId = deps[minimum].endId;
+        console.log('id:   ' + startId);
+        console.log('__________________');
+        return (startId)
+      })
+}
+
+function iterate() {
+  return doStep(end)
+    .then(() => { 
+        if (startId !== endId) {
+          return iterate()
+        } 
+        else {
+          return null
+        }
+    })
+}
+
+
+const connect = mongoose.connect('mongodb://localhost:27017/elite')
+    .then(() => System.find({ id: endId}))
+    .then( endE => { end = endE[0]})
+    .then(() => iterate())
+    .then((q, w) => console.log('123'))

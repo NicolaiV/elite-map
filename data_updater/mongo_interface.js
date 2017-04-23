@@ -48,7 +48,13 @@ function updateDB() {
             if (indexB > indexA && d < 100) {
               dists.push({
                 docAId: itemA.id,
+                docAx: itemA.x,
+                docAy: itemA.y,
+                docAz: itemA.z,
                 docBId: itemB.id,
+                docBx: itemB.x,
+                docBy: itemB.y,
+                docBz: itemB.z,
                 dist: d
               });
               if (dists.length > 100000) {
