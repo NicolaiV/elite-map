@@ -6,11 +6,14 @@ Promise = bluebird;
 mongoose.Promise = bluebird;
 
 let startId = 1;
+let endName = '11 Cephei';
+let startName = '1 G. Caeli';
 let endId = 25;
 let end = null;
 
-function depsById(id){
-  return Distance.find({ $or: [{docAId: id}, {docBId: id}]}, (err, docs) => docs )
+function depsByName(name){
+	console.log('deps by name');
+  return Distance.find({names: name}, (err, docs) => docs )
 }
 
 function normaliseItem(item){
@@ -52,8 +55,9 @@ function distance(x1, y1, z1, x2, y2, z2){
 let path = [];
 
 function doStep({ x: endX, y: endY, z: endZ }) {
-  return depsById(startId)
+  return depsByName(startName)
       .then((deps) => {
+		  console.log(deps);
         deps = deps.map((item) => normaliseItem(item));
         let dist = distance(deps[0].statX, deps[0].statY, deps[0].statZ, endX, endY, endZ) 
         let delta = [];
@@ -78,7 +82,7 @@ function doStep({ x: endX, y: endY, z: endZ }) {
 function iterate() {
   return doStep(end)
     .then(() => { 
-        if (startId !== endId) {
+        if (startName !== endName) {
           return iterate()
         } 
         else {
@@ -89,7 +93,7 @@ function iterate() {
 
 
 const connect = mongoose.connect('mongodb://localhost:27017/elite')
-    .then(() => System.find({ id: endId}))
+	.then(() => System.find({ name: endName}))
     .then( endE => { end = endE[0]})
     .then(() => iterate())
     .then((q, w) => console.log('123'))
