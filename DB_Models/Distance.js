@@ -1,15 +1,11 @@
 const mongoose = require('mongoose');
 
 const distanceSchema = new mongoose.Schema({
-  docAId: Number,
-  docAx: Number,
-  docAy: Number,
-  docAz: Number,
-  docBId: Number,
-  docBx: Number,
-  docBy: Number,
-  docBz: Number,
-  dist: Number
+  names: Array,
+  X: Array,
+  Y: Array,
+  Z: Array,
+  distance: Number
 });
 
 const Distance = mongoose.model('Distance', distanceSchema);

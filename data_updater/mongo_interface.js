@@ -4,12 +4,13 @@ const fsp = require('fs-es6-promise');
 const downloader = require('./downloader');
 const System = require('../DB_Models/System');
 const Distance = require('../DB_Models/Distance');
+const config = require('./config');
 
 const pathToSystemsJSON = downloader.getJsonPath('systems');
 Promise = bluebird;
 mongoose.Promise = bluebird;
 
-const connect = mongoose.connect('mongodb://localhost:27017/elite');
+const connect = mongoose.connect(config.mongoose.colletction);
 
 let db = mongoose.connection.db;
 
@@ -31,12 +32,14 @@ function initDb() {
     .then(() => (db = connect.connection.db));
 }
 
+
+//TODO: сделать построчное чтение файла
 function updateDB() {
-  return downloader.downloadFile('https://eddb.io/archive/v5/systems_populated.json', pathToSystemsJSON)
+  return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => fsp.readFile(pathToSystemsJSON))
     .then((data) => {
-      const systems = JSON.parse(data.toString());
-      return bluebird.map(systems, system => new System(system).save());
+      const systems = data.toString().split('\n').filter( item => item !== '');
+      return bluebird.map(systems, system => new System(JSON.parse(system)).save());
     })
     .then(() => new Promise((resolve) => {
       System.find({}, (err, docs) => {
@@ -45,19 +48,15 @@ function updateDB() {
           console.log(indexA);
           return Promise.each(docs, (itemB, indexB) => {
             const d = distance(itemA, itemB);
-            if (indexB > indexA && d < 100) {
+            if (indexB > indexA && d < config.maxRadius) {
               dists.push({
-                docAId: itemA.id,
-                docAx: itemA.x,
-                docAy: itemA.y,
-                docAz: itemA.z,
-                docBId: itemB.id,
-                docBx: itemB.x,
-                docBy: itemB.y,
-                docBz: itemB.z,
-                dist: d
+                names: [itemA.name,  itemB.name],
+				X: [itemA.x, itemB.x],
+				Y: [itemA.y, itemB.y],
+				Z: [itemA.z, itemB.z],
+                distance: d
               });
-              if (dists.length > 100000) {
+              if (dists.length > config.mongoose.size) {
                 return Distance.collection.insert(dists)
                   .then(() => { dists = []; });
               }

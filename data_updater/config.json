@@ -1,0 +1,11 @@
+{
+  "scheduleJob": "0 0 * * *",
+  "maxErrorDeep": 5,
+  "mongoose": {
+	"colletction": "mongodb://localhost:27017/elite",
+	"size": 100000
+  },
+  "systemsUrl": "https://eddb.io/archive/v5/systems_populated.jsonl",
+  "maxRadius": 100,
+  "localFiles": "data"
+}

@@ -1,8 +1,9 @@
 const rp = require('request-promise');
 const fsp = require('fs-es6-promise');
+const config = require('./config');
 
 function getJsonPath(item) {
-  return `data/${item}.json`;
+  return `${config.localFiles}/${item}.json`;
 }
 
 function downloadFile(url, path) {
@@ -10,12 +11,12 @@ function downloadFile(url, path) {
   return rp(url)
     .then((data) => {
       console.log(`Write ${url} to ${path}`);
-      try {
-        JSON.parse(data.toString());
-      } catch (e) {
-        throw new Error('Download error');
-      }
-      return fsp.mkdir('data')
+      return fsp.mkdir('${config.localFiles}')
+               .catch((err) => {
+                 if (err.code !== 'EEXIST') {
+                   throw err;
+                 }
+               })
                .then(() => fsp.writeFile(path, data));
     });
 }
