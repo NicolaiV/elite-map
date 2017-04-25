@@ -1,14 +1,22 @@
 const mongoInterface = require('./mongo_interface');
-const schedule = require('node-schedule');
 const config = require('./config');
+const Agenda = require('agenda');
 
-let updaeterErrorDeep = 0;
+var agenda = new Agenda({db: {address: config.mongoConnectionString}});
+let updaterErrorDeep = 0;
 
-function reActualData() {
-  console.log('reActualData');
+// TODO: Сделать режим обновления данных, вместо полной перезаписи
+
+function actualData() {
+  console.log('actual data');
   return mongoInterface.initDb()
-  //  .then(() => mongoInterface.db.dropDatabase())
-    .then(() => mongoInterface.System.count({}))
+    .then(() => {
+      if (config.drop) {
+        return mongoInterface.db.dropDatabase();
+      }
+      return null;
+    })
+    .then(() => mongoInterface.System.count())
     .then((count) => {
       console.log(`Count of systems is ${count}`);
       return count;
@@ -20,18 +28,25 @@ function reActualData() {
     })
     .then(count => mongoInterface.actualDB(count === 0))
    // .then(mongoInterface.closeDB)
-    .then(() => { console.log('END'); updaeterErrorDeep = 0; })
+    .then(() => { 
+      console.log('END');
+      updaterErrorDeep = 0; 
+    })
     .catch((err) => {
       console.log(`err ${err}`);
-      if (updaeterErrorDeep < config.maxErrorDeep) {
-        updaeterErrorDeep++;
-        setTimeout(reActualData, (updaeterErrorDeep ** 3) * 1000);
+      if (updaterErrorDeep < config.maxErrorDeep) {
+        updaterErrorDeep++;
+        agenda.schedule(`in ${updaterErrorDeep ** 2} minutes`, 'actual data');
       } else {
-        throw err;
+        updaterErrorDeep = 0;
       }
     });
 }
 
-schedule.scheduleJob(config.scheduleJob, reActualData);
+agenda.define('actual data', actualData);
+agenda.on('ready', function() {
+  agenda.every(config.agenda, 'actual data');
+  agenda.start();
+});
 
-reActualData();
+actualData();
