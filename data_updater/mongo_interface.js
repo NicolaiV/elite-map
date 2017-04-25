@@ -35,35 +35,33 @@ function initDb() {
     .then(() => (db = connect.connection.db));
 }
 
-
-//TODO: сделать построчное чтение файла
 function updateDB() {
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => new Promise((resolve, reject) => {
-       const instream = fs.createReadStream(pathToSystemsJSON);
-       const outstream = new Stream();
-       outstream.readable = true;
-       outstream.writable = true;
-       let systems = [];
-       let rl = readline.createInterface({
-          input: instream,
-          output: outstream
-       })
-       .on('line', function(line) {
-          try {
-            systems.push(JSON.parse(line));
-          } catch (e){}
-          if(systems.length > 1000) {
-            System.collection.insert(systems)
+      const instream = fs.createReadStream(pathToSystemsJSON);
+      const outstream = new Stream();
+      outstream.readable = true;
+      outstream.writable = true;
+      let systems = [];
+      readline.createInterface({
+        input: instream,
+        output: outstream
+      })
+      .on('line', (line) => {
+        if (line !== '') {
+          systems.push(JSON.parse(line));
+          if (systems.length > 1000) {
+            System.collection.insert(systems);
             systems = [];
           }
-        })
-       .on('error', err => reject(err))
-       .on('close', () => {
-          System.collection.insert(systems)
-          systems = [];
-          resolve();
-        });
+        }
+      })
+      .on('error', err => reject(err))
+      .on('close', () => {
+        System.collection.insert(systems);
+        systems = [];
+        resolve();
+      });
     }))
     .then(() => new Promise((resolve) => {
       System.find({}, (err, docs) => {
@@ -74,7 +72,7 @@ function updateDB() {
             const d = distance(itemA, itemB);
             if (indexB > indexA && d < config.maxRadius) {
               dists.push({
-                names: [itemA.name,  itemB.name],
+                names: [itemA.name, itemB.name],
                 X: [itemA.x, itemB.x],
                 Y: [itemA.y, itemB.y],
                 Z: [itemA.z, itemB.z],

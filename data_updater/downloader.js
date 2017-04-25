@@ -11,7 +11,7 @@ function downloadFile(url, path) {
   return rp(url)
     .then((data) => {
       console.log(`Write ${url} to ${path}`);
-      return fsp.mkdir('${config.localFiles}')
+      return fsp.mkdir(config.localFiles)
                .catch((err) => {
                  if (err.code !== 'EEXIST') {
                    throw err;
