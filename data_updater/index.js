@@ -5,8 +5,6 @@ const Agenda = require('agenda');
 const agenda = new Agenda({ db: { address: config.mongoConnectionString } });
 let updaterErrorDeep = 0;
 
-// TODO: Сделать режим обновления данных, вместо полной перезаписи
-
 function actualData() {
   console.log('actual data');
   return mongoInterface.initDb()
@@ -21,7 +19,7 @@ function actualData() {
       console.log(`Count of systems is ${count}`);
       return count;
     })
-    .then(() => mongoInterface.Distance.count({}))
+    .then(() => mongoInterface.Distance.count())
     .then((count) => {
       console.log(`Count of distance is ${count}`);
       return count;

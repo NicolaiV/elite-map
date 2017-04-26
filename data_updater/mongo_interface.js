@@ -35,6 +35,7 @@ function initDb() {
     .then(() => (db = connect.connection.db));
 }
 
+// TODO: Разбить функцию на меньшие функции и добавить комментарии
 function updateDB() {
   const names = [];
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
@@ -67,7 +68,7 @@ function updateDB() {
     .then(() => {
       let dists = [];
       return Promise.each(names, (name, index) => {
-        process.stdout.write(`\r [${index}/${names.length}]`);
+        process.stdout.write(`[${index}/${names.length}]\r`);
         return System.findOne({ name })
           .then(system => System.find({ $and: [
               { x: { $lt: (system.x + config.maxRadius) } },
