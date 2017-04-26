@@ -36,46 +36,61 @@ function initDb() {
 }
 
 function updateDB() {
+  const names = [];
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => new Promise((resolve, reject) => {
       const instream = fs.createReadStream(pathToSystemsJSON);
       const outstream = new Stream();
       outstream.readable = true;
       outstream.writable = true;
-      let systems = [];
       readline.createInterface({
         input: instream,
         output: outstream
       })
       .on('line', (line) => {
         if (line !== '') {
-          systems.push(JSON.parse(line));
-          if (systems.length > 1000) {
-            System.collection.insert(systems);
-            systems = [];
-          }
+          const system = JSON.parse(line);
+          System.find({ name: system.name })
+            .then(systemsInDB => systemsInDB.length === 0)
+            .then((write) => {
+              if (write) {
+                names.push(system.name);
+                return new System(system).save();
+              }
+              return null;
+            });
         }
       })
       .on('error', err => reject(err))
-      .on('close', () => {
-        System.collection.insert(systems);
-        systems = [];
-        resolve();
-      });
+      .on('close', resolve);
     }))
-    .then(() => new Promise((resolve) => {
-      System.find({}, (err, docs) => {
-        let dists = [];
-        return Promise.each(docs, (itemA, indexA) => {
-          console.log(indexA);
-          return Promise.each(docs, (itemB, indexB) => {
-            const d = distance(itemA, itemB);
-            if (indexB > indexA && d < config.maxRadius) {
+    .then(() => {
+      let dists = [];
+      return Promise.each(names, (name, index) => {
+        process.stdout.write(`\r [${index}/${names.length}]`);
+        return System.findOne({ name })
+          .then(system => System.find({ $and: [
+              { x: { $lt: (system.x + config.maxRadius) } },
+              { x: { $gt: (system.x - config.maxRadius) } },
+              { y: { $lt: (system.y + config.maxRadius) } },
+              { y: { $gt: (system.y - config.maxRadius) } },
+              { z: { $lt: (system.z + config.maxRadius) } },
+              { z: { $gt: (system.z - config.maxRadius) } }]
+          })
+          .then((docs) => {
+            return {
+              system,
+              docs
+            };
+          }))
+          .then(({ system, docs }) => Promise.each(docs, (target) => {
+            const d = distance(system, target);
+            if (d < config.maxRadius) {
               dists.push({
-                names: [itemA.name, itemB.name],
-                X: [itemA.x, itemB.x],
-                Y: [itemA.y, itemB.y],
-                Z: [itemA.z, itemB.z],
+                names: [system.name, target.name],
+                X: [system.x, target.x],
+                Y: [system.y, target.y],
+                Z: [system.z, target.z],
                 distance: d
               });
               if (dists.length > config.mongoose.size) {
@@ -84,14 +99,15 @@ function updateDB() {
               }
             }
             return null;
-          });
-        })
-        .then(() => Distance.collection.insert(dists)
-        .then(() => { dists = []; }))
-        .then(resolve);
+          })
+        );
+      })
+      .then(() => Distance.collection.insert(dists))
+      .then(() => {
+        process.stdout.write('\n');
+        dists = [];
       });
-    })
-  );
+    });
 }
 
 function actualDB(force) {

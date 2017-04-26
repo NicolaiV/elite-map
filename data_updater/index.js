@@ -2,7 +2,7 @@ const mongoInterface = require('./mongo_interface');
 const config = require('./config');
 const Agenda = require('agenda');
 
-var agenda = new Agenda({db: {address: config.mongoConnectionString}});
+const agenda = new Agenda({ db: { address: config.mongoConnectionString } });
 let updaterErrorDeep = 0;
 
 // TODO: Сделать режим обновления данных, вместо полной перезаписи
@@ -28,9 +28,9 @@ function actualData() {
     })
     .then(count => mongoInterface.actualDB(count === 0))
    // .then(mongoInterface.closeDB)
-    .then(() => { 
+    .then(() => {
       console.log('END');
-      updaterErrorDeep = 0; 
+      updaterErrorDeep = 0;
     })
     .catch((err) => {
       console.log(`err ${err}`);
@@ -44,7 +44,7 @@ function actualData() {
 }
 
 agenda.define('actual data', actualData);
-agenda.on('ready', function() {
+agenda.on('ready', () => {
   agenda.every(config.agenda, 'actual data');
   agenda.start();
 });
