@@ -11,8 +11,10 @@
   "dependencies": {
     "agenda": "^0.9.1",
     "bluebird": "3.5.0",
+    "event-stream": "^3.3.4",
     "fs-es6-promise": "0.0.3",
     "mongoose": "4.9.4",
+    "request": "^2.81.0",
     "request-promise": "4.2.0"
   },
   "devDependencies": {

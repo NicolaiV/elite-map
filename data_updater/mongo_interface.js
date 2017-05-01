@@ -7,7 +7,8 @@ const downloader = require('./downloader');
 const System = require('../DB_Models/System');
 const Distance = require('../DB_Models/Distance');
 const config = require('./config');
-const Stream = require('stream');
+const stream = require('stream');
+const es = require('event-stream');
 
 const pathToSystemsJSON = downloader.getJsonPath('systems');
 Promise = bluebird;
@@ -38,37 +39,38 @@ function initDb() {
 // TODO: Разбить функцию на меньшие функции и добавить комментарии
 function updateDB() {
   const names = [];
+  let systemsLength = 0;
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => new Promise((resolve, reject) => {
-      const instream = fs.createReadStream(pathToSystemsJSON);
-      const outstream = new Stream();
-      outstream.readable = true;
-      outstream.writable = true;
-      readline.createInterface({
-        input: instream,
-        output: outstream
-      })
-      .on('line', (line) => {
-        if (line !== '') {
-          const system = JSON.parse(line);
-          System.find({ name: system.name })
-            .then(systemsInDB => systemsInDB.length === 0)
-            .then((write) => {
-              if (write) {
-                names.push(system.name);
-                return new System(system).save();
-              }
-              return null;
-            });
-        }
-      })
-      .on('error', err => reject(err))
-      .on('close', resolve);
+  console.log('Recording systems')
+      const instream = fs.createReadStream(pathToSystemsJSON)
+        .pipe(es.split())
+        .pipe(es.mapSync((line) => {
+                if (line !== '') {
+                  instream.pause();
+                  const system = JSON.parse(line);
+                  System.find({ name: system.name })
+                    .then(systemsInDB => systemsInDB.length === 0)
+                    .then((write) => {
+                      if (write) {
+                        names.push(system.name);
+                        systemsLength++;
+                        process.stdout.write(`[${systemsLength}]\r`);
+                        return new System(system).save();
+                      }
+                      return null;
+                    })
+                    .then(instream.resume);
+                }
+            })
+            .on('error', reject)
+            .on('end', resolve))
     }))
     .then(() => {
+      console.log('\nRecording distances')
       let dists = [];
       return Promise.each(names, (name, index) => {
-        process.stdout.write(`[${index}/${names.length}]\r`);
+        process.stdout.write(`[${index + 1}/${names.length}]\r`);
         return System.findOne({ name })
           .then(system => System.find({ $and: [
               { x: { $lt: (system.x + config.maxRadius) } },

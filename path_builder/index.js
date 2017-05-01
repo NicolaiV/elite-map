@@ -12,8 +12,8 @@ let endId = 25;
 let end = null;
 
 function depsByName(name){
-	console.log('deps by name');
-  return Distance.find({names: name}, (err, docs) => docs )
+  console.log('deps by name');
+  return Distance.find({names: name})
 }
 
 function normaliseItem(item){
@@ -93,7 +93,11 @@ function iterate() {
 
 
 const connect = mongoose.connect('mongodb://localhost:27017/elite')
-	.then(() => System.find({ name: endName}))
-    .then( endE => { end = endE[0]})
+//	.then(() => System.find({ name: endName}))
+	.then(() => console.log('start'))
+	.then(() => depsByName(endName))
+	.then((data) => console.log(data))
+	.then(() => console.log('end'))
+  /*  .then( endE => { end = endE[0]})
     .then(() => iterate())
-    .then((q, w) => console.log('123'))
+    .then((q, w) => console.log('123'))*/

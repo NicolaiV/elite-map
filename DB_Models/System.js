@@ -11,7 +11,6 @@ const systemSchema = new mongoose.Schema({
   y: Number,
   z: Number,
   population: Number,
-  distances: Array
   /*is_populated: Boolean,
   government_id: Number,
   government: String,
