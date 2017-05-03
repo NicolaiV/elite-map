@@ -2,12 +2,10 @@ const bluebird = require('bluebird');
 const mongoose = require('mongoose');
 const fsp = require('fs-es6-promise');
 const fs = require('fs');
-const readline = require('readline');
 const downloader = require('./downloader');
 const System = require('../DB_Models/System');
 const Distance = require('../DB_Models/Distance');
 const config = require('./config');
-const stream = require('stream');
 const es = require('event-stream');
 
 const pathToSystemsJSON = downloader.getJsonPath('systems');
@@ -42,32 +40,32 @@ function updateDB() {
   let systemsLength = 0;
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => new Promise((resolve, reject) => {
-  console.log('Recording systems')
+      console.log('Recording systems');
       const instream = fs.createReadStream(pathToSystemsJSON)
         .pipe(es.split())
         .pipe(es.mapSync((line) => {
-                if (line !== '') {
-                  instream.pause();
-                  const system = JSON.parse(line);
-                  System.find({ name: system.name })
-                    .then(systemsInDB => systemsInDB.length === 0)
-                    .then((write) => {
-                      if (write) {
-                        names.push(system.name);
-                        systemsLength++;
-                        process.stdout.write(`[${systemsLength}]\r`);
-                        return new System(system).save();
-                      }
-                      return null;
-                    })
-                    .then(instream.resume);
+          if (line !== '') {
+            instream.pause();
+            const system = JSON.parse(line);
+            System.find({ name: system.name })
+              .then(systemsInDB => systemsInDB.length === 0)
+              .then((write) => {
+                if (write) {
+                  names.push(system.name);
+                  systemsLength++;
+                  process.stdout.write(`[${systemsLength}]\r`);
+                  return new System(system).save();
                 }
-            })
-            .on('error', reject)
-            .on('end', resolve))
+                return null;
+              })
+              .then(instream.resume);
+          }
+        })
+        .on('error', reject)
+        .on('end', resolve));
     }))
     .then(() => {
-      console.log('\nRecording distances')
+      console.log('\nRecording distances');
       let dists = [];
       return Promise.each(names, (name, index) => {
         process.stdout.write(`[${index + 1}/${names.length}]\r`);
