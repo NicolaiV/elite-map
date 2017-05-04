@@ -12,35 +12,22 @@ let endId = 25;
 let end = null;
 
 function depsByName(name){
-  console.log('deps by name');
   return Distance.find({names: name})
 }
 
-function normaliseItem(item){
-  if(item.docAId === startId){
-    return {
-      startId: item.docAId,
-      endId: item.docBId,
-      dist: item.dist,
-      statX: item.docAx,
-      statY: item.docAy,
-      statZ: item.docAz,  
-      endX: item.docBx,
-      endY: item.docBy,
-      endZ: item.docBz
-    }
+function normaliseDistance(distance){
+  if(distance.names[0] === startName){
+    return distance;
   } else {
-    return {
-      startId: item.docBId,
-      endId: item.docAId,
-      dist: item.dist,
-      statX: item.docBx,
-      statY: item.docBy,
-      statZ: item.docBz,
-      endX: item.docAx,
-      endY: item.docAy,
-      endZ: item.docAz 
-    }
+    let invers = {};
+    distance.keys().forEach(item => {
+      if (typeof distance[item] == 'Number') {
+        invers[item] = distance[item];
+      } else {
+        invers[item] = distance[item].reverse();
+      }
+    })
+    return invers;
   }
 }
 
@@ -48,7 +35,6 @@ function distance(x1, y1, z1, x2, y2, z2){
   let res =  Math.sqrt(((x1 - x2) ** 2)
             + ((y1 - y2) ** 2)
             + ((z1 - z2) ** 2));
-    //  console.log('res: ' +  res)
   return res;
 }
 
@@ -57,13 +43,13 @@ let path = [];
 function doStep({ x: endX, y: endY, z: endZ }) {
   return depsByName(startName)
       .then((deps) => {
-		  console.log(deps);
+          console.log(deps);
         deps = deps.map((item) => normaliseItem(item));
-        let dist = distance(deps[0].statX, deps[0].statY, deps[0].statZ, endX, endY, endZ) 
+        let dist = distance(deps[0].X[0], deps[0].Y[0], deps[0].Z[0], endX, endY, endZ) 
         let delta = [];
         for (let i in deps) {
           if (deps.hasOwnProperty(i)) {
-            let targDist = distance(deps[i].endX, deps[i].endY, deps[i].endZ, endX, endY, endZ);
+            let targDist = distance(deps[i].X[1], deps[i].Y[1], deps[i].Z[1], endX, endY, endZ);
             delta[i] = targDist;
           }
         }
@@ -91,13 +77,9 @@ function iterate() {
     })
 }
 
-
 const connect = mongoose.connect('mongodb://localhost:27017/elite')
-//	.then(() => System.find({ name: endName}))
-	.then(() => console.log('start'))
-	.then(() => depsByName(endName))
-	.then((data) => console.log(data))
-	.then(() => console.log('end'))
-  /*  .then( endE => { end = endE[0]})
+    .then(() => console.log('start'))
+    .then(() => System.find({ name: endName}))
+    .then( endE => { end = endE[0]})
     .then(() => iterate())
-    .then((q, w) => console.log('123'))*/
+    .then((q, w) => console.log('123'))

@@ -5,6 +5,8 @@ const Agenda = require('agenda');
 const agenda = new Agenda({ db: { address: config.mongoConnectionString } });
 let updaterErrorDeep = 0;
 
+// TODO: Решить проблему лишних срабатываний
+
 function actualData() {
   console.log('actual data');
   return mongoInterface.initDb()
