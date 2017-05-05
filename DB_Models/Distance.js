@@ -11,6 +11,8 @@ const distanceSchema = new mongoose.Schema({
   distance: Number
 });
 
+distanceSchema.index({ names: 1, type: -1 });
+
 const Distance = mongoose.model('Distance', distanceSchema);
 
 module.exports = Distance;
