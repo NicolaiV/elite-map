@@ -4,7 +4,6 @@ const fsp = require('fs-es6-promise');
 const fs = require('fs');
 const downloader = require('./downloader');
 const System = require('../DB_Models/System');
-const Distance = require('../DB_Models/Distance');
 const config = require('./config');
 const es = require('event-stream');
 
@@ -15,14 +14,6 @@ mongoose.Promise = bluebird;
 const connect = mongoose.connect(config.mongoose.colletction);
 
 let db = mongoose.connection.db;
-
-function distance(initial, target) {
-  const { x: initialX, y: initialY, z: initialZ } = initial;
-  const { x: targetX, y: targetY, z: targetZ } = target;
-  return Math.sqrt(((initialX - targetX) ** 2)
-            + ((initialY - targetY) ** 2)
-            + ((initialZ - targetZ) ** 2));
-}
 
 function closeDB() {
   console.log('closeDB');
@@ -64,51 +55,6 @@ function updateDB() {
         .on('error', reject)
         .on('end', resolve));
     }))
-    .then(() => {
-      console.log('\nRecording distances');
-      let dists = [];
-      return Promise.each(names, (name, index) => {
-        process.stdout.write(`[${index + 1}/${names.length}]\r`);
-        return System.findOne({ name })
-          .then(system => System.find({ $and: [
-              { x: { $lt: (system.x + config.maxRadius) } },
-              { x: { $gt: (system.x - config.maxRadius) } },
-              { y: { $lt: (system.y + config.maxRadius) } },
-              { y: { $gt: (system.y - config.maxRadius) } },
-              { z: { $lt: (system.z + config.maxRadius) } },
-              { z: { $gt: (system.z - config.maxRadius) } }]
-          })
-          .then((docs) => {
-            return {
-              system,
-              docs
-            };
-          }))
-          .then(({ system, docs }) => Promise.each(docs, (target) => {
-            const d = distance(system, target);
-            if (d < config.maxRadius) {
-              dists.push({
-                names: [system.name, target.name],
-                X: [system.x, target.x],
-                Y: [system.y, target.y],
-                Z: [system.z, target.z],
-                distance: d
-              });
-              if (dists.length > config.mongoose.size) {
-                return Distance.collection.insert(dists)
-                  .then(() => { dists = []; });
-              }
-            }
-            return null;
-          })
-        );
-      })
-      .then(() => Distance.collection.insert(dists))
-      .then(() => {
-        process.stdout.write('\n');
-        dists = [];
-      });
-    });
 }
 
 function actualDB(force) {
@@ -138,6 +84,5 @@ module.exports = {
   closeDB,
   db,
   initDb,
-  System,
-  Distance
+  System
 };

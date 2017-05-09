@@ -21,11 +21,6 @@ function actualData() {
       console.log(`Count of systems is ${count}`);
       return count;
     })
-    .then(() => mongoInterface.Distance.count())
-    .then((count) => {
-      console.log(`Count of distance is ${count}`);
-      return count;
-    })
     .then(count => mongoInterface.actualDB(count === 0))
    // .then(mongoInterface.closeDB)
     .then(() => {
