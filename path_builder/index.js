@@ -4,7 +4,7 @@ const System = require('../DB_Models/System');
 Promise = bluebird;
 mongoose.Promise = bluebird;
 
-const maxRadius = 8;
+const maxRadius = 10;
 
 
 function distance(initial, target) {
@@ -23,6 +23,7 @@ function distanceConsts(x1, y1, z1, x2, y2, z2){
   return res;
 }
 
+// TODO: заменить а map
 function depsBySystem(system){    
   let dists = [];
   return System.find({ $and: [
@@ -57,7 +58,7 @@ let path = [];
 let nodes = [];
 function iterate(start, end) {
   return depsBySystem(start)
-    .then((deps) => {
+    .then((deps) => new Promise((resolve) => {
         if (deps.length !== 0) {
           const { x: endX, y: endY, z: endZ } = end;
           let distanceToTarget = distanceConsts(deps[0].X[0], deps[0].Y[0], deps[0].Z[0], endX, endY, endZ);
@@ -67,80 +68,41 @@ function iterate(start, end) {
                  index
              }
           }).sort((a, b) => { return a.value - b.value; });
-          let indexOfMinimum = -1;
-          do {
-			indexOfMinimum++;
-            if (indexOfMinimum === delta.length) {
-              return false;
-            }
-            iterateTargetName = deps[delta[indexOfMinimum].index].names[1];
-          } while (nodes.indexOf(iterateTargetName) !== -1)
-		  
-          iterateTargetName = deps[delta[indexOfMinimum].index].names[1];
-          console.log('name:   ' + iterateTargetName + ' dist: '  + delta[indexOfMinimum].value);
-          path.push(iterateTargetName);
-          nodes.push(iterateTargetName);
-		  if (iterateTargetName === endName) {
-			return true;
-		  }
-          return System.findOne({ name: iterateTargetName})
-                   .then( start => iterate(start, end))
-          
-        } else {
-          return false;
-        }
-    })
-}
-
-function doStep() {
-    if(!start){
-        console.log(start);
-    }
-  return depsBySystem(start)
-      .then((deps) => {
-        let dist = distanceConsts(deps[0].X[0], deps[0].Y[0], deps[0].Z[0], endX, endY, endZ);
-        deps = deps.filter(item => {return item.distance !== 0;})
-        if(deps.length === 0){
-            throw 'Слишокм маленгький радиус';        }
-        let delta = [];
-        for (let i in deps) {
-          if (deps.hasOwnProperty(i)) {
-        //      console.log(Object.keys(deps[i]))
-        //      console.log(deps[i].X)
-            let targDist = distanceConsts(deps[i].X[1], deps[i].Y[1], deps[i].Z[1], endX, endY, endZ);
-            delta[i] = {
-                value: targDist,
-                index: i
-              };
+          const iterateTargetNameUse = function(iterateTargetNamesIndex){
+		    const iterateTargetName = iterateTargetNames[iterateTargetNamesIndex];
+            console.log('name:   ' + iterateTargetName + ' dist: ' + distanceToTarget);
+            path.push(iterateTargetName);
+            nodes.push(iterateTargetName);
+            if (iterateTargetName === endName) {
+              resolve(true);
+            } else {
+            System.findOne({ name: iterateTargetName})
+              .then(start => iterate(start, end))
+              .then(r => {
+				if(r || ( iterateTargetNames.length === (iterateTargetNamesIndex + 1))) {
+                  resolve(r)
+				} else {
+                  iterateTargetNameUse(iterateTargetNamesIndex + 1)
+				}
+			  })
+			}
           }
+          let iterateTargetNames = [];
+          for(let indexOfMinimum = 0; indexOfMinimum < delta.length; indexOfMinimum++) {
+            const iterateTargetName = deps[delta[indexOfMinimum].index].names[1];
+            if (nodes.indexOf(iterateTargetName) === -1) {
+              iterateTargetNames.push(iterateTargetName)
+            }
+          }
+          if (iterateTargetNames.length === 0) {
+            resolve(false);
+          } else {
+            iterateTargetNameUse(0)
+		  }
+        } else {
+          resolve(false);
         }
-        //let minimum = delta.reduce((minIndex, item, index, array) => { return array[minIndex] > item ? index : minIndex }, 0);
-        delta = delta.sort((a, b) => { return a.value - b.value; })
-        let minimum = 0;
-        startName = deps[delta[minimum].index].names[1];
-        while (path.indexOf(startName) !== -1){
-           startName = deps[delta[minimum++].index].names[1];
-        }
-        if(delta.length === minimum) {
-            minimum = 0;
-        }
-        console.log('name:   ' + startName + ' dist: '  + delta[minimum].value);
-        path.push(startName);
-        return System.find({ name: startName})
-          .then( startE => { start = startE[0]})
-      })
-}
-
-function iterate_old() {
-  return doStep(end)
-    .then(() => { 
-        if (startName !== endName) {
-          return iterate()
-        } 
-        else {
-          return null
-        }
-    })
+    }))
 }
 
 const connect = mongoose.connect('mongodb://localhost:27017/elite')
@@ -151,5 +113,5 @@ const connect = mongoose.connect('mongodb://localhost:27017/elite')
     .then(() => System.find({ name: endName}))
     .then( endE => { end = endE[0]})
     .then(() => iterate(start, end))
-	.then(res => console.log(res))
-    .then((q, w) => console.log('123'))
+    .then(res => console.log(res))
+    .then((q, w) => console.log('конец'))

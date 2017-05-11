@@ -27,7 +27,6 @@ function initDb() {
 
 // TODO: Разбить функцию на меньшие функции и добавить комментарии. Не писать избыточные данные. Имена систем в модели дистанции должны быть уникальны. Возможно нужна переинексация
 function updateDB() {
-  const names = [];
   let systemsLength = 0;
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
     .then(() => new Promise((resolve, reject) => {
@@ -42,7 +41,6 @@ function updateDB() {
               .then(systemsInDB => systemsInDB.length === 0)
               .then((write) => {
                 if (write) {
-                  names.push(system.name);
                   systemsLength++;
                   process.stdout.write(`[${systemsLength}]\r`);
                   return new System(system).save();
@@ -67,7 +65,8 @@ function actualDB(force) {
         && (stat.ctime.getDate() === date.getDate()) && !force) {
         return null;
       }
-      return updateDB();
+      return updateDB()
+               .then(() => process.stdout.write('\n'));
     })
     .catch((err) => {
       if (err.code === 'ENOENT') {
