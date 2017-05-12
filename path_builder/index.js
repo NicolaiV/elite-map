@@ -72,7 +72,7 @@ function iterate(iterable, end) {
         const iterateTargetNames = [];
         const iterateTargetNameUse = (iterateTargetNamesIndex) => {
           const iterateTargetName = iterateTargetNames[iterateTargetNamesIndex];
-          console.log(`'${iterateTargetName}'`);
+          console.log(`name: ${iterateTargetName} dist: ${distanceToTarget}`);
           path.push(iterateTargetName);
           nodes.push(iterateTargetName);
           if (iterateTargetName === endName) {
@@ -118,7 +118,6 @@ mongoose.connect('mongodb://localhost:27017/elite')
     .then(end => iterate(start, end))
     .then((res) => {
       console.log(res);
-      console.log(path);
       console.timeEnd('time');
       return mongoose.connection.close();
     });
