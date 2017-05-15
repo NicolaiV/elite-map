@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "agenda": "^0.9.1",
+    "amqplib": "^0.5.1",
     "bluebird": "3.5.0",
     "event-stream": "^3.3.4",
     "fs-es6-promise": "0.0.3",

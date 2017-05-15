@@ -2,14 +2,16 @@ const mongoose = require('mongoose');
 const bluebird = require('bluebird');
 const System = require('../DB_Models/System');
 
+const open = require('amqplib').connect('amqp://localhost');
+
 Promise = bluebird;
 mongoose.Promise = bluebird;
 
-const maxRadius = 11;
-const startName = '1 G. Caeli';
-const endName = 'Waruta';
-const path = [];
-const nodes = [];
+let maxRadius = null;
+let startName = null;
+let endName = null;
+let path = [];
+let nodes = [];
 let start = null;
 
 function distance(initial, target) {
@@ -107,17 +109,40 @@ function iterate(iterable, end) {
     }));
 }
 
-mongoose.connect('mongodb://localhost:27017/elite')
-    .then(() => {
-      console.time('time');
-    })
-    .then(() => console.log('start'))
-    .then(() => System.findOne({ name: startName }))
-    .then((startE) => { start = startE; })
-    .then(() => System.findOne({ name: endName }))
-    .then(end => iterate(start, end))
-    .then((res) => {
-      console.log(res);
-      console.timeEnd('time');
-      return mongoose.connection.close();
-    });
+var q = 'tasks';
+
+open.then(conn => conn.createChannel())
+  .then(ch => ch.assertQueue(q)
+    .then(ok => ch.consume(q, (msg) => {
+    if (msg !== null) {
+	  ch.ack(msg);
+	  const msgValue = JSON.parse(msg.content.toString());
+      console.log(msgValue);
+	  startName = msgValue.startName;
+	  endName = msgValue.endName;
+	  maxRadius = msgValue.maxRadius;
+      path = [];
+      nodes = [];
+      start = null;
+	  
+	  mongoose.connect('mongodb://localhost:27017/elite')
+        .then(() => {
+          console.time('time');
+        })
+        .then(() => console.log('start'))
+        .then(() => System.findOne({ name: startName }))
+        .then((startE) => { start = startE; })
+        .then(() => System.findOne({ name: endName }))
+        .then(end => iterate(start, end))
+        .then((res) => {
+          console.log(res);
+          console.timeEnd('time');
+          return mongoose.connection.close();
+        })
+		.then(() => ch.assertQueue('result'))
+        .then(() => ch.sendToQueue('result', new Buffer(JSON.stringify({
+		    code: msgValue.code,
+            path: path
+		  }))));
+    }
+  }))).catch(console.warn);
