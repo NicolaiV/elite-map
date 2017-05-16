@@ -9,5 +9,10 @@
   "maxRadius": 100,
   "localFiles": "data",
   "mongoConnectionString": "mongodb://127.0.0.1/agenda",
-  "drop": true
+  "drop": true,
+  "amqplib": {
+    "queueOfTasks": "tasks",
+    "queueOfResults": "result",
+	"connect": "amqp://localhost"
+  }
 }

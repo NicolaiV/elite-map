@@ -1,6 +1,6 @@
 const rp = require('request-promise');
 const fsp = require('fs-es6-promise');
-const config = require('./config');
+const config = require('../config');
 
 function getJsonPath(item) {
   return `${config.localFiles}/${item}.jsonl`;

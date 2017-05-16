@@ -1,5 +1,5 @@
 const mongoInterface = require('./mongo_interface');
-const config = require('./config');
+const config = require('../config');
 const Agenda = require('agenda');
 
 const agenda = new Agenda({ db: { address: config.mongoConnectionString } });

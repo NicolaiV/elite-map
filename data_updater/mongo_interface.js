@@ -4,7 +4,7 @@ const fsp = require('fs-es6-promise');
 const fs = require('fs');
 const downloader = require('./downloader');
 const System = require('../DB_Models/System');
-const config = require('./config');
+const config = require('../config');
 const es = require('event-stream');
 
 const pathToSystemsJSON = downloader.getJsonPath('systems');
