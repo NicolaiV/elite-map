@@ -18,11 +18,11 @@ mongoose.connect(config.mongoose.colletction)
   .then(res => model = res)
   .then(() => model.save())
   .then(() => ch.sendToQueue('tasks', new Buffer(`{"_id":"${model._id}"}`)))
-  .then(() => setTimeout(()=>PathModel.findOne({_id: model.id})
-             .then(res => {
-               console.log(res);
-             //  return PathModel.remove({_id: model.id});
-             })
-         , 3000))
-
+  .then(() => 
+    setTimeout(()=>PathModel.
+	  findOne({_id: model.id})
+        .then(res => {
+          console.log(res);
+            return PathModel.remove({_id: model.id});
+        }) , 3000))
   .catch(console.warn)
