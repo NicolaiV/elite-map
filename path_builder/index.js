@@ -115,13 +115,21 @@ function iterate(iterable, endNamesArray) {
 
 const queueOfTasks = config.amqplib.queueOfTasks;
 let id = null;
+
 mongoose.connect(config.mongoose.colletction)
   .then(() => amqplib.connect(config.amqplib.connect))
-  .then(conn => conn.createChannel())
-  .then(ch => ch.assertQueue(queueOfTasks)
-    .then(() => ch.consume(queueOfTasks, (msg) => {
+  .then((conn) => {
+  return conn.createChannel().then(function(ch) {
+    var ok = ch.assertQueue(queueOfTasks, {durable: true});
+    ok = ok.then(function() { ch.prefetch(1); });
+    ok = ok.then(function() {
+      ch.consume(queueOfTasks, doWork, {noAck: false});
+      console.log(" [*] Waiting for messages. To exit press CTRL+C");
+    });
+    return ok;
+
+    function doWork(msg) {      
       if (msg !== null) {
-        ch.ack(msg);
         const toStr = msg.content.toString();
         console.log(toStr)
         id = JSON.parse(toStr)._id;
@@ -142,7 +150,9 @@ mongoose.connect(config.mongoose.colletction)
                 msgValue.generated = true;
               })
               .then(() => msgValue.save())
+              .then(() => ch.ack(msg))
           })
       }
-    })))
-  .catch(console.warn);
+    }
+  });
+}).catch(console.warn);
