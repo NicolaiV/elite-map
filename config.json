@@ -12,7 +12,6 @@
   "drop": true,
   "amqplib": {
     "queueOfTasks": "tasks",
-    "queueOfResults": "result",
 	"connect": "amqp://localhost"
   }
 }

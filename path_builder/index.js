@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bluebird = require('bluebird');
 const System = require('../DB_Models/System');
+const PathModel = require('../DB_Models/Path');
 const amqplib = require('amqplib');
 const config = require('../config');
 
@@ -113,7 +114,7 @@ function iterate(iterable, endNamesArray) {
 }
 
 const queueOfTasks = config.amqplib.queueOfTasks;
-const queueOfResults = config.amqplib.queueOfResults;
+let id = null;
 mongoose.connect(config.mongoose.colletction)
   .then(() => amqplib.connect(config.amqplib.connect))
   .then(conn => conn.createChannel())
@@ -121,23 +122,27 @@ mongoose.connect(config.mongoose.colletction)
     .then(() => ch.consume(queueOfTasks, (msg) => {
       if (msg !== null) {
         ch.ack(msg);
-        const msgValue = JSON.parse(msg.content.toString());
-        const startName = msgValue.names.shift();
-        maxRadius = msgValue.maxRadius;
-        path = [];
-        nodes = [];
-        console.time('time');
-        System.findOne({ name: startName })
-          .then(start => iterate(start, msgValue.names))
-          .then((res) => {
-            console.log(res);
-            console.timeEnd('time');
+        const toStr = msg.content.toString();
+        console.log(toStr)
+        id = JSON.parse(toStr)._id;
+        return PathModel.findOne({ _id: id })
+          .then(msgValue => {
+            const startName = msgValue.names.shift();
+            maxRadius = msgValue.maxRadius;
+            path = [];
+            nodes = [];
+            console.time('time');
+            return System.findOne({ name: startName })
+              .then(start => iterate(start, msgValue.names))
+              .then((res) => {
+                console.log(res);
+                console.timeEnd('time');
+                msgValue.path = path;
+                msgValue.code = res;
+                msgValue.generated = true;
+              })
+              .then(() => msgValue.save())
           })
-          .then(() => ch.assertQueue(queueOfResults))
-          .then(() => ch.sendToQueue(queueOfResults, new Buffer(JSON.stringify({
-            code: msgValue.code,
-            path
-          }))));
       }
     })))
   .catch(console.warn);
