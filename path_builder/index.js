@@ -128,7 +128,7 @@ mongoose.connect(config.mongoose.colletction)
     });
     return ok;
 
-    function doWork(msg) {      
+    function doWork(msg) {
       if (msg !== null) {
         const toStr = msg.content.toString();
         console.log(toStr)
@@ -151,6 +151,10 @@ mongoose.connect(config.mongoose.colletction)
               })
               .then(() => msgValue.save())
               .then(() => ch.ack(msg))
+              .catch(() => {
+                ch.ack(msg)
+                throw e;
+              });
           })
       }
     }

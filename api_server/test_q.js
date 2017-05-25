@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 const bluebird = require('bluebird');
 const config = require('../config');
 const PathModel = require('../DB_Models/Path');
@@ -20,7 +20,7 @@ mongoose.connect(config.mongoose.colletction)
   .then(() => ch.sendToQueue('tasks', new Buffer(`{"_id":"${model._id}"}`)))
   .then(() => 
     setTimeout(()=>PathModel.
-	  findOne({_id: model.id})
+      findOne({_id: model.id})
         .then(res => {
           console.log(res);
             return PathModel.remove({_id: model.id});

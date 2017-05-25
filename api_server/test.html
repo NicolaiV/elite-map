@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест</title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <h1>Введите данные</h1>
+	<script>
+	let id = null;
+		function send(){
+			var str = document.getElementById("value").value;
+
+			var XHR = ("onload" in new XMLHttpRequest()) ? XMLHttpRequest : XDomainRequest;
+			
+			var xhr = new XHR();
+
+			xhr.open('POST', 'http://127.0.0.1:3000/generate', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+
+			xhr.onload = function() {
+			  id = JSON.parse(this.responseText)._id;
+			  console.log(id);
+			}
+
+			xhr.onerror = function() {
+			  alert( 'Ошибка ' + this.status );
+			}
+			xhr.send(str);
+		}
+		function get(){
+			var str = `{"_id": "${id}"}`;
+			console.log(str)
+
+			var XHR = ("onload" in new XMLHttpRequest()) ? XMLHttpRequest : XDomainRequest;
+			
+			var xhr = new XHR();
+
+			xhr.open('POST', 'http://127.0.0.1:3000/get_path', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+
+			xhr.onload = function() {
+				alert(this.responseText);
+			}
+
+			xhr.onerror = function() {
+			  alert( 'Ошибка ' + this.status );
+			}
+			xhr.send(str);
+		}
+	</script>
+	<p><input type="text" id="value"> </p>
+	<p><button value="" onclick="send()">Отправить запрос</button></p>
+	<p><button value="" onclick="get()">Получить путь</button></p>
+</body>
+<html>
