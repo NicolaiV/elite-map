@@ -1,3 +1,5 @@
+/* eslint no-param-reassign: ["error", { "props": false }]*/
+/* eslint no-underscore-dangle: ["error", { "allow": ["_id"] }]*/
 const mongoose = require('mongoose');
 const bluebird = require('bluebird');
 const System = require('../DB_Models/System');
@@ -118,23 +120,14 @@ let id = null;
 
 mongoose.connect(config.mongoose.colletction)
   .then(() => amqplib.connect(config.amqplib.connect))
-  .then((conn) => {
-  return conn.createChannel().then((ch) => {
-    var ok = ch.assertQueue(queueOfTasks, {durable: true});
-    ok = ok.then(() => ch.prefetch(1));
-    ok = ok.then(() => {
-      ch.consume(queueOfTasks, doWork, {noAck: false});
-      console.log(" [*] Waiting for messages. To exit press CTRL+C");
-    });
-    return ok;
-
+  .then(conn => conn.createChannel().then((ch) => {
     function doWork(msg) {
       if (msg !== null) {
         const toStr = msg.content.toString();
-        console.log(toStr)
+        console.log(toStr);
         id = JSON.parse(toStr)._id;
         return PathModel.findOne({ _id: id })
-          .then(msgValue => {
+          .then((msgValue) => {
             const startName = msgValue.names.shift();
             maxRadius = msgValue.maxRadius;
             path = [];
@@ -151,12 +144,19 @@ mongoose.connect(config.mongoose.colletction)
               })
               .then(() => msgValue.save())
               .then(() => ch.ack(msg))
-              .catch(() => {
-                ch.ack(msg)
+              .catch((e) => {
+                ch.ack(msg);
                 throw e;
               });
-          })
+          });
       }
+      return null;
     }
-  });
-}).catch(console.warn);
+    let ok = ch.assertQueue(queueOfTasks, { durable: true });
+    ok = ok.then(() => ch.prefetch(1));
+    ok = ok.then(() => {
+      ch.consume(queueOfTasks, doWork, { noAck: false });
+      console.log(' [*] Waiting for messages. To exit press CTRL+C');
+    });
+    return ok;
+  })).catch(console.warn);
