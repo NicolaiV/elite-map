@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const config = require('../config');
 const bodyParser = require('body-parser');
+const System = require('../DB_Models/System');
 var app = express();
 
 const bluebird = require('bluebird');
@@ -11,10 +12,6 @@ mongoose.Promise = bluebird;
 Promise = bluebird;
 
 app.use(bodyParser.json());
-app.use(function (req, res, next) {
-  console.log(req.body) // populated!
-  next()
-})
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -57,13 +54,30 @@ mongoose.connect(config.mongoose.colletction)
           const result = JSON.stringify(pm)
           if (pm.generated){
             PathModel.remove({"_id": pm._id})
-            res.end(result)
+			  .then(() => res.end(result))
           } else {
-            return res.end('{"generation": true}')
+            return res.end('{"generated": false}')
           }
         } else {
           return res.end('{"error": true}')
         }
-      })
+	  })
+  }))
+		
+  .then(() => app.post('/get_systems', (req, res) => {
+    let msg = req.body;
+	console.log(msg);
+	['x', 'y', 'z'].forEach((code) => msg[code] = msg[code].sort((a, b) => a - b))
+	System.find({ $and: [
+      { x: { $lt: msg['x'][1] } },
+      { x: { $gt: msg['x'][0] } },
+      { y: { $lt: msg['y'][1] } },
+      { y: { $gt: msg['y'][0] } },
+      { z: { $lt: msg['z'][1] } },
+      { z: { $gt: msg['z'][0] } }]
+    })
+	  .then(systems => {
+		  res.end(JSON.stringify(systems));
+	  })
   }))
   .catch(console.warn)
