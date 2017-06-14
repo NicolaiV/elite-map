@@ -60,7 +60,7 @@ function iterate(iterable, endNamesArray) {
   return System.findOne({ name: endNamesArray[0] })
       .then(end =>
           depsBySystem(iterable)
-            .then(deps => new Promise((resolve) => {
+            .then(deps => {
               if (deps.length !== 0) {
                 const { x: endX, y: endY, z: endZ } = end;
                 const distanceToTarget = distance(
@@ -87,32 +87,31 @@ function iterate(iterable, endNamesArray) {
                     console.log(`curentNodeName: ${curentNodeName}`);
                     nodes = [];
                     if (endNamesArray.length === 0) {
-                      resolve(true);
-                      return;
+                      return true;
                     }
                   }
                   path.push(targetName);
                   nodes.push(targetName);
-                  System.findOne({ name: targetName })
+                  return System.findOne({ name: targetName })
                     .then(current => iterate(current, endNamesArray))
                     .then((r) => {
                       if (r || (namesOfTargets.length === (index + 1))) {
-                        resolve(r);
+                        return r;
                       } else {
                         path.pop();
-                        iterateNames(index + 1);
+                        return iterateNames(index + 1);
                       }
                     });
                 };
                 if (namesOfTargets.length === 0) {
-                  resolve(false);
+                  return false;
                 } else {
-                  iterateNames(0);
+                  return iterateNames(0);
                 }
               } else {
-                resolve(false);
+                return false;
               }
-            })));
+            }));
 }
 
 const queueOfTasks = config.amqplib.queueOfTasks;
