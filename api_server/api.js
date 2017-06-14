@@ -1,4 +1,5 @@
 const PathModel = require('../DB_Models/Path');
+const System = require('../DB_Models/System');
 
 function setRequests(app, ch) {
   app.post('/generate', (req, res) => {

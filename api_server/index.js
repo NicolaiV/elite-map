@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const config = require('../config');
 const bodyParser = require('body-parser');
-const System = require('../DB_Models/System');
 const bluebird = require('bluebird');
 const amqplib = require('amqplib');
 const api = require('./api');
