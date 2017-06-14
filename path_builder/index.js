@@ -14,6 +14,8 @@ let maxRadius = null;
 let path = null;
 let nodes = null;
 
+const queueOfTasks = config.amqplib.queueOfTasks;
+
 function distance(x1, y1, z1, x2, y2, z2) {
   function distanceBetweenSystemsConsts(initialX, initialY, initialZ, targetX, targetY, targetZ) {
     return Math.sqrt(((initialX - targetX) ** 2)
@@ -57,65 +59,63 @@ function depsBySystem(system) {
 }
 
 function iterate(iterable, endNamesArray) {
+  let end = null;
   return System.findOne({ name: endNamesArray[0] })
-      .then(end =>
-          depsBySystem(iterable)
-            .then(deps => {
-              if (deps.length !== 0) {
-                const { x: endX, y: endY, z: endZ } = end;
-                const distanceToTarget = distance(
-                  deps[0].X[0],
-                  deps[0].Y[0],
-                  deps[0].Z[0],
-                  endX,
-                  endY,
-                  endZ);
-                const delta = deps.map((item, index) => ({
-                  value: distance(item.X[1], item.Y[1], item.Z[1], endX, endY, endZ),
-                  index
-                }))
-                  .sort((a, b) => a.value - b.value)
-                  .map(item => item.index);
-                const namesOfTargets = delta
-                  .map(index => deps[index].target)
-                  .filter(item => nodes.indexOf(item) === -1);
-                const iterateNames = (index) => {
-                  const targetName = namesOfTargets[index];
-                  console.log(`name: ${targetName} dist: ${distanceToTarget}`);
-                  if (targetName === endNamesArray[0]) {
-                    const curentNodeName = endNamesArray.shift();
-                    console.log(`curentNodeName: ${curentNodeName}`);
-                    nodes = [];
-                    if (endNamesArray.length === 0) {
-                      return true;
-                    }
-                  }
-                  path.push(targetName);
-                  nodes.push(targetName);
-                  return System.findOne({ name: targetName })
-                    .then(current => iterate(current, endNamesArray))
-                    .then((r) => {
-                      if (r || (namesOfTargets.length === (index + 1))) {
-                        return r;
-                      } else {
-                        path.pop();
-                        return iterateNames(index + 1);
-                      }
-                    });
-                };
-                if (namesOfTargets.length === 0) {
-                  return false;
-                } else {
-                  return iterateNames(0);
-                }
+    .then(res => (end = res))
+    .then(() => depsBySystem(iterable))
+    .then((deps) => {
+      if (deps.length !== 0) {
+        const { x: endX, y: endY, z: endZ } = end;
+        const distanceToTarget = distance(
+          deps[0].X[0],
+          deps[0].Y[0],
+          deps[0].Z[0],
+          endX,
+          endY,
+          endZ);
+        const delta = deps.map((item, index) => ({
+            value: distance(item.X[1], item.Y[1], item.Z[1], endX, endY, endZ),
+            index
+          }))
+          .sort((a, b) => a.value - b.value)
+          .map(item => item.index)
+        const namesOfTargets = delta
+          .map(index => deps[index].target)
+          .filter(item => nodes.indexOf(item) === -1);
+        const iterateNames = (index) => {
+          const targetName = namesOfTargets[index];
+          console.log(`name: ${targetName} dist: ${distanceToTarget}`);
+          if (targetName === endNamesArray[0]) {
+            const curentNodeName = endNamesArray.shift();
+            console.log(`curentNodeName: ${curentNodeName}`);
+            nodes = [];
+            if (endNamesArray.length === 0) {
+              return true;
+            }
+          }
+          path.push(targetName);
+          nodes.push(targetName);
+          return System.findOne({ name: targetName })
+            .then(current => iterate(current, endNamesArray))
+            .then((r) => {
+              if (r || (namesOfTargets.length === (index + 1))) {
+                return r;
               } else {
-                return false;
+                path.pop();
+                return iterateNames(index + 1);
               }
-            }));
+            });
+        };
+        if (namesOfTargets.length === 0) {
+          return false;
+        } else {
+          return iterateNames(0);
+        }
+      } else {
+        return false;
+      }
+    });
 }
-
-const queueOfTasks = config.amqplib.queueOfTasks;
-let id = null;
 
 mongoose.connect(config.mongoose.colletction)
   .then(() => amqplib.connect(config.amqplib.connect))
@@ -124,8 +124,7 @@ mongoose.connect(config.mongoose.colletction)
       if (msg !== null) {
         const toStr = msg.content.toString();
         console.log(toStr);
-        id = JSON.parse(toStr)._id;
-        return PathModel.findOne({ _id: id })
+        return PathModel.findOne({ _id: JSON.parse(toStr)._id })
           .then((msgValue) => {
             const startName = msgValue.names.shift();
             maxRadius = msgValue.maxRadius;

@@ -7,18 +7,18 @@ function getJsonPath(item) {
 }
 
 function downloadFile(url, path) {
+  let data = null;
   console.log(`Download ${url}`);
   return rp(url)
-    .then((data) => {
-      console.log(`Write ${url} to ${path}`);
-      return fsp.mkdir(config.localFiles)
-               .catch((err) => {
-                 if (err.code !== 'EEXIST') {
-                   throw err;
-                 }
-               })
-               .then(() => fsp.writeFile(path, data));
-    });
+    .then((res) => (data = res))
+    .then(() => console.log(`Write ${url} to ${path}`))
+    .then(() => fsp.mkdir(config.localFiles))
+    .catch((err) => {
+      if (err.code !== 'EEXIST') {
+        throw err;
+      }
+    })
+    .then(() => fsp.writeFile(path, data));
 }
 
 module.exports = {

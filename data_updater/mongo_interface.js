@@ -25,7 +25,6 @@ function initDb() {
     .then(() => (db = connect.connection.db));
 }
 
-// TODO: Разбить функцию на меньшие функции и добавить комментарии. Не писать избыточные данные. Имена систем в модели дистанции должны быть уникальны. Возможно нужна переинексация
 function updateDB() {
   let systemsLength = 0;
   return downloader.downloadFile(config.systemsUrl, pathToSystemsJSON)
